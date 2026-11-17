@@ -1,0 +1,23 @@
+dn: cn=radius-vlan,cn=schema,cn=config
+objectClass: olcSchemaConfig
+cn: radius-vlan
+olcAttributeTypes: ( 1.3.6.1.4.1.27856.1.1.1 NAME 'radiusTunnelType'
+  DESC 'RADIUS Tunnel-Type used for dynamic VLAN assignment'
+  EQUALITY integerMatch
+  SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE )
+olcAttributeTypes: ( 1.3.6.1.4.1.27856.1.1.2 NAME 'radiusTunnelMediumType'
+  DESC 'RADIUS Tunnel-Medium-Type used for dynamic VLAN assignment'
+  EQUALITY integerMatch
+  SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE )
+olcAttributeTypes: ( 1.3.6.1.4.1.27856.1.1.3 NAME 'radiusTunnelPrivateGroupId'
+  DESC 'RADIUS Tunnel-Private-Group-ID used for dynamic VLAN assignment'
+  EQUALITY integerMatch
+  SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE )
+olcAttributeTypes: ( 1.3.6.1.4.1.27856.1.1.4 NAME 'ubiquitiVlanId'
+  DESC 'Ubiquiti VLAN ID used for dynamic VLAN assignment'
+  EQUALITY integerMatch
+  SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE )
+olcObjectClasses: ( 1.3.6.1.4.1.27856.1.2.1 NAME 'radiusDynamicVlanUser'
+  DESC 'Custom LDAP object for dynamic VLAN delivery'
+  SUP top AUXILIARY
+  MAY ( radiusTunnelType $ radiusTunnelMediumType $ radiusTunnelPrivateGroupId $ ubiquitiVlanId ) )

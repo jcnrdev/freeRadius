@@ -1,0 +1,143 @@
+﻿# sites-available/default - Virtual server padrao
+# Trata autenticacao PAP/CHAP/MS-CHAPv2 e accounting
+
+server default {
+  listen {
+    type      = auth
+    ipaddr    = *
+    port      = 0
+    limit {
+      max_connections = 16
+      lifetime        = 0
+      idle_timeout    = 30
+    }
+  }
+
+  listen {
+    type      = acct
+    ipaddr    = *
+    port      = 0
+    limit {}
+  }
+
+  # IPv6
+  listen {
+    type   = auth
+    ipv6addr = ::
+    port   = 0
+  }
+
+  listen {
+    type   = acct
+    ipv6addr = ::
+    port   = 0
+  }
+
+  # ─── authorize ──────────────────────────────────────────────────────────────
+  authorize {
+    filter_username
+    preprocess
+    chap
+    mschap
+    digest
+    suffix
+    eap {
+      ok = return
+    }
+    ldap
+    files
+    sql
+    expiration
+    logintime
+
+    if (&control:LDAP-UserDn =~ /ou=(PX-)?DESATIVAD[AO]S?/i) {
+      update request {
+        &Module-Failure-Message := "Conta ou objeto em arvore desativada no LDAP"
+      }
+      reject
+    }
+
+    if (&Called-Station-Id =~ /PX-DISPOSITIVOS|PX-DISPOSITIVOS2/) {
+      if (&control:LDAP-UserDn !~ /ou=DISPOSITIVOS/) {
+        reject
+      }
+    }
+
+    if (&Called-Station-Id =~ /PX-CORPORATIVO|PX-CORPORATIVO2/) {
+      if (&control:LDAP-UserDn !~ /ou=USUARIOS/ && &control:LDAP-UserDn !~ /ou=COMPUTADORES/) {
+        reject
+      }
+    }
+    pap
+  }
+
+  # ─── authenticate ───────────────────────────────────────────────────────────
+  authenticate {
+    Auth-Type PAP {
+      pap
+    }
+    Auth-Type CHAP {
+      chap
+    }
+    Auth-Type MS-CHAP {
+      mschap
+    }
+    digest
+    eap
+  }
+
+  # ─── preacct ────────────────────────────────────────────────────────────────
+  preacct {
+    preprocess
+    acct_unique
+    suffix
+    files
+  }
+
+  # ─── accounting ─────────────────────────────────────────────────────────────
+  accounting {
+    detail
+    unix
+    -sql
+    exec
+    attr_filter.accounting_response
+  }
+
+  # ─── session ─────────────────────────────────────────────────────────────────
+  session {
+    sql
+  }
+
+  # ─── post-auth ───────────────────────────────────────────────────────────────
+  post-auth {
+    update {
+      &reply: += &session-state:
+    }
+    if (&reply:Tunnel-Type && &reply:Tunnel-Medium-Type && &reply:Tunnel-Private-Group-ID) {
+      update reply {
+        &Tunnel-Type := &reply:Tunnel-Type
+        &Tunnel-Medium-Type := &reply:Tunnel-Medium-Type
+        &Tunnel-Private-Group-ID := &reply:Tunnel-Private-Group-ID
+      }
+    }
+    if (&reply:Ubiquiti-VLAN-ID) {
+      update reply {
+        &Ubiquiti-VLAN-ID := &reply:Ubiquiti-VLAN-ID
+      }
+    }
+    sql
+    exec
+    remove_reply_message_if_eap
+    Post-Auth-Type REJECT {
+      sql
+      attr_filter.access_reject
+      eap
+      remove_reply_message_if_eap
+    }
+  }
+
+  pre-proxy {}
+  post-proxy {
+    eap
+  }
+}

@@ -1,0 +1,130 @@
+services:
+
+  # Banco de Dados
+  db:
+    image: mariadb:10.11
+    container_name: freeradius-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-rootSecret123}
+      MYSQL_DATABASE:      ${DB_NAME:-radius}
+      MYSQL_USER:          ${DB_USER:-radius}
+      MYSQL_PASSWORD:      ${DB_PASSWORD:-radiusSecret123}
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "${DB_PORT_EXTERNAL:-3307}:3306"
+    networks:
+      - radius_net
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # FreeRADIUS
+  freeradius:
+    build:
+      context: ./freeradius
+      dockerfile: Dockerfile
+    container_name: freeradius
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      openldap:
+        condition: service_started
+    environment:
+      DB_HOST:     db
+      DB_PORT:     3306
+      DB_NAME:     ${DB_NAME:-radius}
+      DB_USER:     ${DB_USER:-radius}
+      DB_PASSWORD: ${DB_PASSWORD:-radiusSecret123}
+      RADIUS_SHARED_SECRET: ${RADIUS_SHARED_SECRET:-testing123}
+      LDAP_ENABLED:        ${LDAP_ENABLED:-true}
+      LDAP_HOST:           openldap
+      LDAP_PORT:           389
+      LDAP_BASE_DN:        ${LDAP_BASE_DN:-dc=empresa,dc=local}
+      LDAP_ADMIN_DN:       ${LDAP_ADMIN_DN:-cn=admin,dc=empresa,dc=local}
+      LDAP_ADMIN_PASSWORD: ${LDAP_ADMIN_PASSWORD:-adminSecret123}
+    volumes:
+      - ./freeradius/config/clients.conf:/etc/freeradius/custom_clients.conf:ro
+      - radius_logs:/var/log/freeradius
+    ports:
+      - "${RADIUS_AUTH_PORT:-1812}:1812/udp"
+      - "${RADIUS_ACCT_PORT:-1813}:1813/udp"
+      - "${RADIUS_COA_PORT:-3799}:3799/udp"
+    networks:
+      - radius_net
+    cap_add:
+      - NET_ADMIN
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "5"
+
+  # Servidor OpenLDAP
+  openldap:
+    image: osixia/openldap:1.5.0
+    container_name: openldap
+    hostname: SVROLDAP-01
+    restart: unless-stopped
+    environment:
+      LDAP_ORGANISATION: "${LDAP_ORGANISATION:-Minha Empresa}"
+      LDAP_DOMAIN: "${LDAP_DOMAIN:-empresa.local}"
+      LDAP_BASE_DN: "${LDAP_BASE_DN:-dc=empresa,dc=local}"
+      LDAP_ADMIN_PASSWORD: "${LDAP_ADMIN_PASSWORD:-adminSecret123}"
+      LDAP_CONFIG_PASSWORD: "${LDAP_CONFIG_PASSWORD:-configSecret123}"
+      LDAP_READONLY_USER: "true"
+      LDAP_READONLY_USER_USERNAME: "readonly"
+      LDAP_READONLY_USER_PASSWORD: "${LDAP_READONLY_PASSWORD:-readonly123}"
+    volumes:
+      - ldap_data:/var/lib/ldap
+      - ldap_config:/etc/ldap/slapd.d
+      - ./openldap/bootstrap.ldif:/container/service/slapd/assets/config/bootstrap/ldif/custom/50-bootstrap.ldif:ro
+      - ./openldap/60-radius-vlan.ldif:/container/service/slapd/assets/config/bootstrap/ldif/custom/60-radius-vlan.ldif:ro
+      - ./openldap/61-radius-vlan-user.ldif:/container/service/slapd/assets/config/bootstrap/ldif/custom/61-radius-vlan-user.ldif:ro
+    ports:
+      - "${LDAP_PORT:-389}:389"
+      - "${LDAPS_PORT:-636}:636"
+    networks:
+      - radius_net
+    command: ["--copy-service", "--loglevel", "info"]
+
+  # phpLDAPadmin (Painel Web do OpenLDAP)
+  phpldapadmin:
+    image: osixia/phpldapadmin:0.9.0
+    container_name: phpldapadmin
+    restart: unless-stopped
+    depends_on:
+      - openldap
+    environment:
+      PHPLDAPADMIN_LDAP_HOSTS: "openldap"
+      PHPLDAPADMIN_HTTPS: "false"
+    volumes:
+      - ./openldap/phpldapadmin-config.php:/var/www/phpldapadmin/config/config.php
+      - ./openldap/phpldapadmin-php-fpm.conf:/etc/php/7.3/fpm/pool.d/www.conf:ro
+    ports:
+      - "${PHPLDAPADMIN_PORT:-8085}:80"
+    networks:
+      - radius_net
+
+volumes:
+  db_data:
+    driver: local
+  radius_logs:
+    driver: local
+  ldap_data:
+    driver: local
+  ldap_config:
+    driver: local
+
+networks:
+  radius_net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/24

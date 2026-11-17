@@ -1,0 +1,37 @@
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+
+scrape_configs:
+  - job_name: freeradius
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: freeradius
+          host: freeradius-host
+          __path__: /var/log/freeradius/*.log
+
+  - job_name: openldap
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: openldap
+          host: openldap-host
+          __path__: /var/log/openldap/slapd.log
+
+  - job_name: ubiquiti
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: ubiquiti
+          host: ubiquiti-gateway
+          __path__: /var/log/ubiquiti/ubiquiti.log

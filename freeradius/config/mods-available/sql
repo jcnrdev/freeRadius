@@ -1,0 +1,33 @@
+﻿sql {
+  driver     = "rlm_sql_mysql"
+  dialect    = "mysql"
+  server     = "__DB_HOST__"
+  port       = __DB_PORT__
+  login      = "__DB_USER__"
+  password   = "__DB_PASSWORD__"
+  radius_db  = "__DB_NAME__"
+  mysql {
+    tls {}
+    warnings = auto
+  }
+  pool {
+    start         = ${thread[pool].start_servers}
+    min           = ${thread[pool].min_spare_servers}
+    max           = ${thread[pool].max_servers}
+    spare         = ${thread[pool].max_spare_servers}
+    uses          = 0
+    retry_delay   = 30
+    lifetime      = 0
+    idle_timeout  = 60
+  }
+  read_clients       = yes
+  client_table       = "nas"
+  authcheck_table    = "radcheck"
+  authreply_table    = "radreply"
+  groupcheck_table   = "radgroupcheck"
+  groupreply_table   = "radgroupreply"
+  usergroup_table    = "radusergroup"
+  acct_table1        = "radacct"
+  acct_table2        = "radacct"
+  postauth_table     = "radpostauth"
+}

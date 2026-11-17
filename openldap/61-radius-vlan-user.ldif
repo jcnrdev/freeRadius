@@ -1,0 +1,16 @@
+dn: cn=Joao Claudio Nascimento Rodrigues,ou=USUARIOS,ou=PX-TESTE,ou=PROJETOS,dc=empresa,dc=local
+changetype: modify
+add: objectClass
+objectClass: radiusDynamicVlanUser
+-
+add: radiusTunnelType
+radiusTunnelType: 13
+-
+add: radiusTunnelMediumType
+radiusTunnelMediumType: 6
+-
+add: radiusTunnelPrivateGroupId
+radiusTunnelPrivateGroupId: 20
+-
+add: ubiquitiVlanId
+ubiquitiVlanId: 20

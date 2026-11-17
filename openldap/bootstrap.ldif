@@ -1,0 +1,119 @@
+dn: ou=users,dc=empresa,dc=local
+objectClass: organizationalUnit
+ou: users
+
+dn: ou=groups,dc=empresa,dc=local
+objectClass: organizationalUnit
+ou: groups
+
+dn: cn=users,ou=groups,dc=empresa,dc=local
+objectClass: top
+objectClass: posixGroup
+cn: users
+gidNumber: 10000
+description: Grupo padrao de usuarios
+
+dn: cn=wifi-users,ou=groups,dc=empresa,dc=local
+objectClass: top
+objectClass: posixGroup
+cn: wifi-users
+gidNumber: 10001
+description: Grupo de usuarios de Wi-Fi RADIUS
+
+dn: cn=admins,ou=groups,dc=empresa,dc=local
+objectClass: top
+objectClass: posixGroup
+cn: admins
+gidNumber: 10002
+description: Grupo de Administradores Gerais
+memberUid: adminjoao
+memberUid: ADMINISTRADOR
+memberUid: adminrodrigo
+
+dn: uid=adminjoao,ou=users,dc=empresa,dc=local
+objectClass: top
+objectClass: person
+objectClass: organizationalPerson
+objectClass: inetOrgPerson
+objectClass: posixAccount
+cn: Administrador Joao
+sn: Joao
+uid: adminjoao
+uidNumber: 10000
+gidNumber: 10002
+homeDirectory: /home/adminjoao
+userPassword: L@is@151203.
+mail: adminjoao@empresa.local
+
+dn: uid=ADMINISTRADOR,ou=users,dc=empresa,dc=local
+objectClass: top
+objectClass: person
+objectClass: organizationalPerson
+objectClass: inetOrgPerson
+objectClass: posixAccount
+cn: Administrador Geral
+sn: Geral
+uid: ADMINISTRADOR
+uidNumber: 9999
+gidNumber: 10002
+homeDirectory: /home/administrador
+userPassword: L@is@151203.
+mail: administrador@empresa.local
+
+dn: uid=adminrodrigo,ou=users,dc=empresa,dc=local
+objectClass: top
+objectClass: person
+objectClass: organizationalPerson
+objectClass: inetOrgPerson
+objectClass: posixAccount
+cn: Administrador Rodrigo
+sn: Rodrigo
+uid: adminrodrigo
+uidNumber: 10003
+gidNumber: 10002
+homeDirectory: /home/adminrodrigo
+userPassword: L@is@151203.
+mail: adminrodrigo@empresa.local
+
+dn: ou=PROJETOS,dc=empresa,dc=local
+objectClass: organizationalUnit
+ou: PROJETOS
+
+dn: ou=PX-TESTE,ou=PROJETOS,dc=empresa,dc=local
+objectClass: organizationalUnit
+ou: PX-TESTE
+
+dn: ou=USUARIOS,ou=PX-TESTE,ou=PROJETOS,dc=empresa,dc=local
+objectClass: organizationalUnit
+ou: USUARIOS
+
+dn: ou=DISPOSITIVOS,ou=PX-TESTE,ou=PROJETOS,dc=empresa,dc=local
+objectClass: organizationalUnit
+ou: DISPOSITIVOS
+
+dn: ou=PX-FILIAL,ou=PROJETOS,dc=empresa,dc=local
+objectClass: organizationalUnit
+ou: PX-FILIAL
+
+dn: ou=USUARIOS,ou=PX-FILIAL,ou=PROJETOS,dc=empresa,dc=local
+objectClass: organizationalUnit
+ou: USUARIOS
+
+dn: ou=DISPOSITIVOS,ou=PX-FILIAL,ou=PROJETOS,dc=empresa,dc=local
+objectClass: organizationalUnit
+ou: DISPOSITIVOS
+
+dn: uid=teste.ldap,ou=users,dc=empresa,dc=local
+objectClass: top
+objectClass: person
+objectClass: organizationalPerson
+objectClass: inetOrgPerson
+objectClass: posixAccount
+cn: Usuario Teste LDAP
+sn: Teste
+uid: teste.ldap
+uidNumber: 10001
+gidNumber: 10001
+homeDirectory: /home/teste.ldap
+userPassword: SenhaLdap@2024
+mail: teste.ldap@empresa.local

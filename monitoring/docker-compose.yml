@@ -1,0 +1,95 @@
+services:
+  openldap-log-forwarder:
+    image: docker:24.0-cli
+    container_name: openldap-log-forwarder
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./openldap-logs:/logs
+    command: >
+      sh -lc "mkdir -p /logs && while true; do docker logs -f --tail=0 openldap >> /logs/slapd.log 2>&1 || true; sleep 2; done"
+    depends_on:
+      - loki
+    network_mode: none
+
+  freeradius-log-forwarder:
+    image: docker:24.0-cli
+    container_name: freeradius-log-forwarder
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./freeradius-logs:/logs
+    command: >
+      sh -lc "mkdir -p /logs && while true; do docker logs -f --tail=0 freeradius >> /logs/freeradius.log 2>&1 || true; sleep 2; done"
+    depends_on:
+      - loki
+    network_mode: none
+
+  loki:
+    image: grafana/loki:3.0.0
+    container_name: loki
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./loki-config.yaml:/etc/loki/local-config.yaml:ro
+      - loki-data:/loki
+    command: -config.file=/etc/loki/local-config.yaml
+    restart: unless-stopped
+    networks:
+      - monitoring
+
+  ubiquiti-syslog:
+    image: balabit/syslog-ng:latest
+    container_name: ubiquiti-syslog
+    restart: unless-stopped
+    ports:
+      - "514:514/udp"
+    volumes:
+      - ./ubiquiti-syslog.conf:/etc/syslog-ng/syslog-ng.conf:ro
+      - ./ubiquiti-logs:/var/log/ubiquiti
+    networks:
+      - monitoring
+
+  promtail:
+    image: grafana/promtail:3.0.0
+    container_name: promtail
+    volumes:
+      - ./promtail-config.yaml:/etc/promtail/config.yml:ro
+      - ./openldap-logs:/var/log/openldap:ro
+      - ./ubiquiti-logs:/var/log/ubiquiti:ro
+      - ./freeradius-logs:/var/log/freeradius:ro
+      - promtail-data:/tmp
+    command: -config.file=/etc/promtail/config.yml
+    depends_on:
+      - loki
+      - openldap-log-forwarder
+      - freeradius-log-forwarder
+      - ubiquiti-syslog
+    restart: unless-stopped
+    networks:
+      - monitoring
+
+  grafana:
+    image: grafana/grafana:11.0.0
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana-data:/var/lib/grafana
+    depends_on:
+      - loki
+    restart: unless-stopped
+    networks:
+      - monitoring
+
+volumes:
+  loki-data:
+  promtail-data:
+  grafana-data:
+
+networks:
+  monitoring:
+    driver: bridge

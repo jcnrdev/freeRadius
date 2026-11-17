@@ -1,0 +1,30 @@
+﻿# policy.d/filter_username - Valida e normaliza o username
+
+policy {
+  filter_username {
+    if (&User-Name == "") {
+      update request {
+        &Module-Failure-Message += "Empty Username"
+      }
+      reject
+    }
+    if (&User-Name =~ / /) {
+      update request {
+        &Module-Failure-Message += "Username contains whitespace"
+      }
+      reject
+    }
+    if (&User-Name =~ /@[^@]*@/ ) {
+      update request {
+        &Module-Failure-Message += "Username contains multiple realms"
+      }
+      reject
+    }
+    if (&User-Name =~ /\.\./) {
+      update request {
+        &Module-Failure-Message += "Username contains \"..\" (dotdot)"
+      }
+      reject
+    }
+  }
+}

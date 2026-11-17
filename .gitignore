@@ -1,0 +1,17 @@
+﻿# Variaveis de ambiente (nunca versionar)
+.env
+
+# Certificados gerados
+freeradius/certs/*.pem
+freeradius/certs/*.key
+freeradius/certs/*.csr
+freeradius/certs/*.p12
+freeradius/certs/*.der
+
+# Logs
+*.log
+
+# Editor
+.vscode/
+*.swp
+*~
