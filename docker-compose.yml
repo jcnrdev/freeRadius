@@ -87,6 +87,7 @@ services:
       - ./openldap/bootstrap.ldif:/container/service/slapd/assets/config/bootstrap/ldif/custom/50-bootstrap.ldif:ro
       - ./openldap/60-radius-vlan.ldif:/container/service/slapd/assets/config/bootstrap/ldif/custom/60-radius-vlan.ldif:ro
       - ./openldap/61-radius-vlan-user.ldif:/container/service/slapd/assets/config/bootstrap/ldif/custom/61-radius-vlan-user.ldif:ro
+      - ./openldap/90-admin-acl.ldif:/container/service/slapd/assets/config/bootstrap/ldif/custom/90-admin-acl.ldif:ro
     ports:
       - "${LDAP_PORT:-389}:389"
       - "${LDAPS_PORT:-636}:636"

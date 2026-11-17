@@ -30,6 +30,15 @@ memberUid: adminjoao
 memberUid: ADMINISTRADOR
 memberUid: adminrodrigo
 
+dn: cn=admins-acl,ou=groups,dc=empresa,dc=local
+objectClass: top
+objectClass: groupOfNames
+cn: admins-acl
+description: ACL de Administradores Gerais
+member: uid=adminjoao,ou=users,dc=empresa,dc=local
+member: uid=ADMINISTRADOR,ou=users,dc=empresa,dc=local
+member: uid=adminrodrigo,ou=users,dc=empresa,dc=local
+
 dn: uid=adminjoao,ou=users,dc=empresa,dc=local
 objectClass: top
 objectClass: person
