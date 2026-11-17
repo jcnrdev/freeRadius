@@ -37,11 +37,11 @@ services:
       openldap:
         condition: service_started
     environment:
-      DB_HOST:     db
-      DB_PORT:     3306
-      DB_NAME:     ${DB_NAME:-radius}
-      DB_USER:     ${DB_USER:-radius}
-      DB_PASSWORD: ${DB_PASSWORD:-radiusSecret123}
+      DB_HOST:             db
+      DB_PORT:             3306
+      DB_NAME:             ${DB_NAME:-radius}
+      DB_USER:             ${DB_USER:-radius}
+      DB_PASSWORD:         ${DB_PASSWORD:-radiusSecret123}
       RADIUS_SHARED_SECRET: ${RADIUS_SHARED_SECRET:-testing123}
       LDAP_ENABLED:        ${LDAP_ENABLED:-true}
       LDAP_HOST:           openldap
@@ -49,9 +49,14 @@ services:
       LDAP_BASE_DN:        ${LDAP_BASE_DN:-dc=empresa,dc=local}
       LDAP_ADMIN_DN:       ${LDAP_ADMIN_DN:-cn=admin,dc=empresa,dc=local}
       LDAP_ADMIN_PASSWORD: ${LDAP_ADMIN_PASSWORD:-adminSecret123}
+      MONITORING_ENABLED:  ${MONITORING_ENABLED:-true}
+      LOKI_ENDPOINT:      ${LOKI_ENDPOINT:-http://loki:3100/loki/api/v1/push}
     volumes:
       - ./freeradius/config/clients.conf:/etc/freeradius/custom_clients.conf:ro
+      - ./monitoring/promtail-config.yaml:/etc/promtail/config.yml:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
       - radius_logs:/var/log/freeradius
+      - ldap_logs:/var/log/openldap
     ports:
       - "${RADIUS_AUTH_PORT:-1812}:1812/udp"
       - "${RADIUS_ACCT_PORT:-1813}:1813/udp"
@@ -117,6 +122,8 @@ volumes:
   db_data:
     driver: local
   radius_logs:
+    driver: local
+  ldap_logs:
     driver: local
   ldap_data:
     driver: local

@@ -6,6 +6,38 @@ DB_PORT="${DB_PORT:-3306}"
 DB_NAME="${DB_NAME:-radius}"
 DB_USER="${DB_USER:-radius}"
 DB_PASSWORD="${DB_PASSWORD:-radiusSecret123}"
+MONITORING_ENABLED="${MONITORING_ENABLED:-true}"
+LOKI_ENDPOINT="${LOKI_ENDPOINT:-http://loki:3100/loki/api/v1/push}"
+
+start_monitoring() {
+  if [ "${MONITORING_ENABLED}" != "true" ]; then
+    return 0
+  fi
+
+  mkdir -p /var/log/freeradius /var/log/openldap
+  chown -R freerad:freerad /var/log/freeradius /var/log/openldap 2>/dev/null || true
+
+  if [ -S /var/run/docker.sock ] && command -v docker >/dev/null 2>&1; then
+    echo "[INFO] Capturando logs do OpenLDAP via docker logs no mesmo container..."
+    (while true; do
+      docker logs -f --tail=0 openldap >> /var/log/openldap/slapd.log 2>&1 || true
+      echo "[WARN] docker logs do OpenLDAP caiu; reconectando em 2s..." >&2
+      sleep 2
+    done) &
+    OPENLDAP_LOG_TAIL_PID=$!
+    trap 'kill ${OPENLDAP_LOG_TAIL_PID:-} 2>/dev/null || true' EXIT INT TERM
+  fi
+
+  if [ -f /etc/promtail/config.yml ]; then
+    echo "[INFO] Iniciando promtail no mesmo container do FreeRADIUS..."
+    PROMTAIL_CFG="/tmp/promtail-config.yml"
+    cp /etc/promtail/config.yml "$PROMTAIL_CFG"
+    sed -i "s|http://loki:3100/loki/api/v1/push|${LOKI_ENDPOINT}|g" "$PROMTAIL_CFG"
+    promtail -config.file="$PROMTAIL_CFG" &
+    PROMTAIL_PID=$!
+    trap 'kill ${PROMTAIL_PID:-} ${OPENLDAP_LOG_TAIL_PID:-} 2>/dev/null || true' EXIT INT TERM
+  fi
+}
 
 echo "=========================================="
 echo "  FreeRADIUS - Iniciando"
@@ -166,6 +198,8 @@ chown -R freerad:freerad /var/log/freeradius
 # Ajusta permissoes do diretorio de configuracao sem falhar em mounts ro
 chown -R root:freerad /etc/freeradius 2>/dev/null || true
 chmod 750 /etc/freeradius 2>/dev/null || true
+
+start_monitoring
 
 echo "[INFO] Validando configuracao FreeRADIUS..."
 freeradius -C -l stdout
