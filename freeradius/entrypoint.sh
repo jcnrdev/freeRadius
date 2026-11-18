@@ -126,12 +126,19 @@ if [ "${LDAP_ENABLED}" = "true" ] && [ -f "$LDAP_CONF" ]; then
       sed -i "/control:Password-With-Header/ a\\
         control:NT-Password             := 'sambaNTPassword'" "$ldap_module"
     fi
-    if [ -f "$ldap_module" ] && ! grep -q "reply:Tunnel-Type.*radiusTunnelType" "$ldap_module"; then
-      sed -i "/control:NT-Password/ a\\
-        reply:Tunnel-Type               := 'radiusTunnelType'\
-        reply:Tunnel-Medium-Type        := 'radiusTunnelMediumType'\
-        reply:Tunnel-Private-Group-ID   := 'radiusTunnelPrivateGroupId'\
-        reply:Ubiquiti-VLAN-ID          := 'ubiquitiVlanId'" "$ldap_module"
+    if [ -f "$ldap_module" ]; then
+      if ! grep -q "reply:Tunnel-Type[[:space:]]*:=" "$ldap_module"; then
+        sed -i "/control:NT-Password/a\\        reply:Tunnel-Type               := 'radiusTunnelType'" "$ldap_module"
+      fi
+      if ! grep -q "reply:Tunnel-Medium-Type[[:space:]]*:=" "$ldap_module"; then
+        sed -i "/reply:Tunnel-Type/a\\        reply:Tunnel-Medium-Type        := 'radiusTunnelMediumType'" "$ldap_module"
+      fi
+      if ! grep -q "reply:Tunnel-Private-Group-ID[[:space:]]*:=" "$ldap_module"; then
+        sed -i "/reply:Tunnel-Medium-Type/a\\        reply:Tunnel-Private-Group-ID   := 'radiusTunnelPrivateGroupId'" "$ldap_module"
+      fi
+      if ! grep -q "reply:Ubiquiti-VLAN-ID[[:space:]]*:=" "$ldap_module"; then
+        sed -i "/reply:Tunnel-Private-Group-ID/a\\        reply:Ubiquiti-VLAN-ID          := 'ubiquitiVlanId'" "$ldap_module"
+      fi
     fi
   done
 
@@ -142,17 +149,14 @@ if [ "${LDAP_ENABLED}" = "true" ] && [ -f "$LDAP_CONF" ]; then
   ln -sf /etc/freeradius/mods-available/ldap /etc/freeradius/mods-enabled/ldap
   chmod 640 "$LDAP_CONF"
 
-  # Habilita suporte a autenticacao LDAP nos sites default e inner-tunnel
+  # O default já chega montado com LDAP ativo.
+  # Não executar sed -i em bind mounts para evitar falha de rename (Device or resource busy).
   if [ -f "/etc/freeradius/sites-available/default" ]; then
-    echo "[INFO] Habilitando Auth-Type LDAP no site default..."
-    sed -i '/#\tif ((ok || updated) && User-Password && !control:Auth-Type)/,/#\t}/ s/^#//' /etc/freeradius/sites-available/default
-    sed -i '/#\tAuth-Type LDAP {/,/#\t}/ s/^#//' /etc/freeradius/sites-available/default
+    echo "[INFO] LDAP habilitado no site default customizado"
   fi
 
   if [ -f "/etc/freeradius/sites-available/inner-tunnel" ]; then
-    echo "[INFO] Habilitando Auth-Type LDAP no site inner-tunnel..."
-    sed -i '/#\tif (!&control:Auth-Type && &User-Password)/,/#\t}/ s/^#//' /etc/freeradius/sites-available/inner-tunnel
-    sed -i '/#\tAuth-Type LDAP {/,/#\t}/ s/^#//' /etc/freeradius/sites-available/inner-tunnel
+    echo "[INFO] LDAP configurado no inner-tunnel"
   fi
 fi
 
@@ -198,6 +202,10 @@ chown -R freerad:freerad /var/log/freeradius
 # Ajusta permissoes do diretorio de configuracao sem falhar em mounts ro
 chown -R root:freerad /etc/freeradius 2>/dev/null || true
 chmod 750 /etc/freeradius 2>/dev/null || true
+
+# Ajusta permissao do arquivo default montado antes da validacao
+chown root:freerad /etc/freeradius/sites-available/default 2>/dev/null || true
+chmod 640 /etc/freeradius/sites-available/default 2>/dev/null || true
 
 start_monitoring
 

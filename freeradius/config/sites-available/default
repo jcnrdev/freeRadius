@@ -76,6 +76,9 @@ server default {
     Auth-Type PAP {
       pap
     }
+    Auth-Type LDAP {
+      ldap
+    }
     Auth-Type CHAP {
       chap
     }
